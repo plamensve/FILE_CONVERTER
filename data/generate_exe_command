@@ -1,0 +1,21 @@
+python -m PyInstaller `
+--noconfirm `
+--onefile `
+--windowed `
+--name FlexConverter `
+--icon=data/logo.ico `
+--add-data "ui;ui" `
+--add-data "data;data" `
+--add-data "converters;converters" `
+--hidden-import=reportlab.graphics.barcode.code128 `
+--hidden-import=reportlab.graphics.barcode.code39 `
+--hidden-import=reportlab.graphics.barcode.code93 `
+--hidden-import=reportlab.graphics.barcode.code11 `
+--hidden-import=reportlab.graphics.barcode.usps `
+--hidden-import=reportlab.graphics.barcode.usps4s `
+--hidden-import=reportlab.graphics.barcode.i2of5 `
+--hidden-import=reportlab.graphics.barcode.code39extended `
+--hidden-import=reportlab.graphics.barcode.qr `
+--hidden-import=reportlab.graphics.barcode.aztec `
+--hidden-import=reportlab.graphics.barcode.ecc200datamatrix `
+FlexConverter.py
