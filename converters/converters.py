@@ -228,12 +228,18 @@ conversion_map = {
 def download_youtube_to_mp4(url, dst, progress_callback=None, complete_callback=None):
     import subprocess
     import sys
+    import os
 
     try:
+        dst_dir = os.path.dirname(dst)
+        dst_name = os.path.splitext(os.path.basename(dst))[0]
+        output_template = os.path.join(dst_dir, dst_name + ".%(ext)s")
+
         command = [
             sys.executable, "-m", "yt_dlp",
+            "--no-playlist",
             "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4",
-            "-o", dst,
+            "-o", output_template,
             "--newline"
         ]
 
@@ -245,17 +251,24 @@ def download_youtube_to_mp4(url, dst, progress_callback=None, complete_callback=
             bufsize=1
         )
 
+        final_file = None
+
         for line in process.stdout:
+            print(line.strip())  # Debug
+
+            if "Destination:" in line:
+                possible_path = line.strip().split("Destination:")[-1].strip()
+                if os.path.isfile(possible_path):
+                    final_file = possible_path
+
             if progress_callback and "[download]" in line and "%" in line:
                 try:
-                    percent = None
                     for part in line.split():
                         if "%" in part:
                             percent_str = part.replace('%', '').replace(',', '.').strip()
                             percent = float(percent_str)
+                            progress_callback(percent)
                             break
-                    if percent is not None:
-                        progress_callback(percent)
                 except Exception:
                     pass
 
@@ -264,7 +277,10 @@ def download_youtube_to_mp4(url, dst, progress_callback=None, complete_callback=
         if process.returncode != 0:
             raise RuntimeError("yt_dlp failed")
 
-        # Успешно приключване
+        # Rename to exact dst if needed
+        if final_file and final_file != dst:
+            os.rename(final_file, dst)
+
         if progress_callback:
             progress_callback(100)
         if complete_callback:
@@ -272,4 +288,5 @@ def download_youtube_to_mp4(url, dst, progress_callback=None, complete_callback=
 
     except Exception as e:
         raise RuntimeError(f"Failed to download YouTube video: {e}")
+
 
