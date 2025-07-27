@@ -7,6 +7,8 @@ import threading
 from converters.converters import conversion_map, download_youtube_to_mp4
 import time
 from PIL import Image, ImageTk
+import sys
+import os
 
 
 class MainWindow:
@@ -17,7 +19,12 @@ class MainWindow:
         self.frame.pack(pady=40)
 
         # === Logo Image ===
-        image_path = os.path.join("data", "logo-without-background.png")
+        if getattr(sys, 'frozen', False):
+            base_path = sys._MEIPASS
+        else:
+            base_path = os.path.abspath(".")
+
+        image_path = os.path.join(base_path, "data", "pic.png")
         logo_img = Image.open(image_path)
         logo_img = logo_img.resize((250, 130), Image.Resampling.LANCZOS)
         self.logo_photo = ImageTk.PhotoImage(logo_img)
