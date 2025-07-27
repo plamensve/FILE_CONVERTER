@@ -7,6 +7,7 @@ python -m PyInstaller `
 --add-data "ui;ui" `
 --add-data "data;data" `
 --add-data "converters;converters" `
+--hidden-import=yt_dlp `
 --hidden-import=reportlab.graphics.barcode.code128 `
 --hidden-import=reportlab.graphics.barcode.code39 `
 --hidden-import=reportlab.graphics.barcode.code93 `

@@ -226,67 +226,36 @@ conversion_map = {
 # ------------------ YOUTUBE ------------------
 
 def download_youtube_to_mp4(url, dst, progress_callback=None, complete_callback=None):
-    import subprocess
-    import sys
-    import os
+    from yt_dlp import YoutubeDL
 
-    try:
-        dst_dir = os.path.dirname(dst)
-        dst_name = os.path.splitext(os.path.basename(dst))[0]
-        output_template = os.path.join(dst_dir, dst_name + ".%(ext)s")
+    dst_dir = os.path.dirname(dst)
+    dst_name = os.path.splitext(os.path.basename(dst))[0]
 
-        command = [
-            sys.executable, "-m", "yt_dlp",
-            "--no-playlist",
-            "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4",
-            "-o", output_template,
-            "--newline"
-        ]
+    ydl_opts = {
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4',
+        'outtmpl': os.path.join(dst_dir, dst_name + '.%(ext)s'),
+        'noplaylist': True,
+        'progress_hooks': [lambda d: handle_progress(d, progress_callback, complete_callback)],
+        'quiet': True,
+        'no_warnings': True,
+    }
 
-        process = subprocess.Popen(
-            command + [url],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            universal_newlines=True,
-            bufsize=1
-        )
+    with YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
 
-        final_file = None
 
-        for line in process.stdout:
-            print(line.strip())  # Debug
-
-            if "Destination:" in line:
-                possible_path = line.strip().split("Destination:")[-1].strip()
-                if os.path.isfile(possible_path):
-                    final_file = possible_path
-
-            if progress_callback and "[download]" in line and "%" in line:
-                try:
-                    for part in line.split():
-                        if "%" in part:
-                            percent_str = part.replace('%', '').replace(',', '.').strip()
-                            percent = float(percent_str)
-                            progress_callback(percent)
-                            break
-                except Exception:
-                    pass
-
-        process.wait()
-
-        if process.returncode != 0:
-            raise RuntimeError("yt_dlp failed")
-
-        # Rename to exact dst if needed
-        if final_file and final_file != dst:
-            os.rename(final_file, dst)
-
+def handle_progress(d, progress_callback, complete_callback):
+    if d['status'] == 'downloading':
+        percent = d.get('_percent_str', '').replace('%', '').strip()
+        try:
+            if progress_callback:
+                progress_callback(float(percent))
+        except:
+            pass
+    elif d['status'] == 'finished':
         if progress_callback:
             progress_callback(100)
         if complete_callback:
             complete_callback()
-
-    except Exception as e:
-        raise RuntimeError(f"Failed to download YouTube video: {e}")
 
 

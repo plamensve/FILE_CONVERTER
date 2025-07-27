@@ -288,6 +288,8 @@ class MainWindow:
             self.youtube_status_label.config(text="", fg="green")
             return
 
+        self.youtube_status_label.config(text="")
+
         self.youtube_progress["value"] = 10
         self.youtube_progress_label.config(text="10%")
         self.master.update_idletasks()
