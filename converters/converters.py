@@ -225,13 +225,15 @@ conversion_map = {
 
 # ------------------ YOUTUBE ------------------
 
-def download_youtube_to_mp4(url, dst, progress_callback=None):
+def download_youtube_to_mp4(url, dst, progress_callback=None, complete_callback=None):
+    import subprocess
+    import sys
+
     try:
-        output_template = os.path.splitext(dst)[0] + ".%(ext)s"
         command = [
             sys.executable, "-m", "yt_dlp",
             "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4",
-            "-o", output_template,
+            "-o", dst,
             "--newline"
         ]
 
@@ -258,8 +260,16 @@ def download_youtube_to_mp4(url, dst, progress_callback=None):
                     pass
 
         process.wait()
+
         if process.returncode != 0:
             raise RuntimeError("yt_dlp failed")
 
+        # Успешно приключване
+        if progress_callback:
+            progress_callback(100)
+        if complete_callback:
+            complete_callback()
+
     except Exception as e:
         raise RuntimeError(f"Failed to download YouTube video: {e}")
+

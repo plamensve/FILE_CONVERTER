@@ -6,6 +6,7 @@ import os
 import threading
 from converters.converters import conversion_map, download_youtube_to_mp4
 import time
+from PIL import Image, ImageTk
 
 
 class MainWindow:
@@ -15,8 +16,18 @@ class MainWindow:
         self.frame = tk.Frame(master)
         self.frame.pack(pady=40)
 
+        # === Logo Image ===
+        image_path = os.path.join("data", "logo-without-background.png")
+        logo_img = Image.open(image_path)
+        logo_img = logo_img.resize((250, 130), Image.Resampling.LANCZOS)
+        self.logo_photo = ImageTk.PhotoImage(logo_img)
+
+        self.logo_label = tk.Label(self.frame, image=self.logo_photo)
+        self.logo_label.pack(pady=(0, 10))
+
+        # === Welcome Text ===
         self.label = tk.Label(self.frame, text="Welcome to FlexConvert", font=('Roboto', 20))
-        self.label.pack(pady=20)
+        self.label.pack(pady=(0, 20))
 
         self.selected_file_label = tk.Label(self.frame, text="No file selected", fg='gray')
         self.selected_file_label.pack(pady=5)
@@ -85,7 +96,8 @@ class MainWindow:
         )
         self.convert_button.pack(side="left", padx=5)
 
-        self.description_label = tk.Label(self.frame, text="", font=("Arial", 11), fg="gray", wraplength=580, justify="left")
+        self.description_label = tk.Label(self.frame, text="", font=("Arial", 11), fg="gray", wraplength=580,
+                                          justify="left")
         self.description_label.pack(pady=(10, 0))
 
         self.selected_from.trace("w", self.update_description)
@@ -155,7 +167,15 @@ class MainWindow:
         self.youtube_progress_label.place(relx=0.5, rely=0.5, anchor="center")
 
         self.youtube_status_label = tk.Label(self.frame, text="", font=("Arial", 12), fg="green")
-        self.youtube_status_label.pack(pady=(0, 5))
+        self.youtube_status_label.pack(pady=(0, 30))
+
+        self.footer_label = tk.Label(
+            self.frame,
+            text="© 2025 FlexConverter v1.0 – All rights reserved\nSupport E-mail: svetoslavov.dev@gmail.com",
+            font=("Arial", 10),
+            fg="gray"
+        )
+        self.footer_label.pack(pady=(10, 0))
 
         self.update_description()
 
@@ -258,10 +278,9 @@ class MainWindow:
             initialfile="video.mp4"
         )
         if not save_path:
-            self.youtube_status_label.config(text="Download cancelled.", fg="orange")
+            self.youtube_status_label.config(text="", fg="green")
             return
 
-        self.youtube_status_label.config(text="Downloading...", fg="blue")
         self.youtube_progress["value"] = 10
         self.youtube_progress_label.config(text="10%")
         self.master.update_idletasks()
@@ -270,7 +289,7 @@ class MainWindow:
         self.real_progress_started = False
 
         def simulate_progress():
-            for _ in range(30):  # 30 секунди
+            for _ in range(30):  # 30 секунди = 30 итерации
                 if self.real_progress_started:
                     return
                 self.simulated_progress += 1  # от 10% до 40%
@@ -288,14 +307,22 @@ class MainWindow:
 
         def run_download():
             try:
-                download_youtube_to_mp4(url, save_path, progress_callback=update_progress)
-                self.youtube_progress["value"] = 100
-                self.youtube_progress_label.config(text="100%")
-                self.youtube_status_label.config(text="Download completed!", fg="green")
+                def on_complete():
+                    def complete_ui_update():
+                        self.youtube_progress.config(value=100)
+                        self.youtube_progress_label.config(text="100%")
+                        self.youtube_status_label.config(text="Download completed!", fg="green")
+
+                    self.master.after(0, complete_ui_update)
+
+                download_youtube_to_mp4(
+                    url, save_path,
+                    progress_callback=lambda p: self.master.after(0, lambda: update_progress(p)),
+                    complete_callback=on_complete
+                )
+
             except Exception as e:
-                self.youtube_status_label.config(text=f"Error: {e}", fg="red")
+                self.master.after(0, lambda: self.youtube_status_label.config(text=f"Error: {e}", fg="red"))
 
         threading.Thread(target=simulate_progress, daemon=True).start()
         threading.Thread(target=run_download, daemon=True).start()
-
-
