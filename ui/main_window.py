@@ -5,6 +5,7 @@ from tkinter import filedialog, ttk
 import os
 import threading
 from converters.converters import conversion_map, download_youtube_to_mp4
+import time
 
 
 class MainWindow:
@@ -14,7 +15,7 @@ class MainWindow:
         self.frame = tk.Frame(master)
         self.frame.pack(pady=40)
 
-        self.label = tk.Label(self.frame, text="Welcome to File Converter", font=('Roboto', 20))
+        self.label = tk.Label(self.frame, text="Welcome to FlexConvert", font=('Roboto', 20))
         self.label.pack(pady=20)
 
         self.selected_file_label = tk.Label(self.frame, text="No file selected", fg='gray')
@@ -28,9 +29,9 @@ class MainWindow:
         ]
         to_ext_options = [
             'PDF',
-            'JPG', 'PNG',
+            'JPG', 'PNG', 'GIF',
             'MP3', 'WAV', 'OGG',
-            'MP4', 'AVI', 'GIF',
+            'MP4', 'AVI',
         ]
 
         self.available_from = from_ext_options
@@ -84,6 +85,12 @@ class MainWindow:
         )
         self.convert_button.pack(side="left", padx=5)
 
+        self.description_label = tk.Label(self.frame, text="", font=("Arial", 11), fg="gray", wraplength=580, justify="left")
+        self.description_label.pack(pady=(10, 0))
+
+        self.selected_from.trace("w", self.update_description)
+        self.selected_to.trace("w", self.update_description)
+
         self.progress = ttk.Progressbar(
             self.frame,
             orient="horizontal",
@@ -114,7 +121,7 @@ class MainWindow:
 
         tk.Label(self.youtube_frame, text="YouTube URL:", font=("Arial", 12)).pack(side="left", padx=(0, 5))
 
-        self.youtube_url = tk.Entry(self.youtube_frame, width=60)
+        self.youtube_url = tk.Entry(self.youtube_frame, width=58)
         self.youtube_url.pack(side="left", padx=(5, 5))
         self.youtube_url.bind("<Control-v>", self.paste_from_clipboard)
         self.youtube_url.bind("<Command-v>", self.paste_from_clipboard)
@@ -150,6 +157,23 @@ class MainWindow:
         self.youtube_status_label = tk.Label(self.frame, text="", font=("Arial", 12), fg="green")
         self.youtube_status_label.pack(pady=(0, 5))
 
+        self.update_description()
+
+    def update_description(self, *args):
+        descriptions = {
+            ("mp4", "gif"): "Recommended video duration: under 6 seconds. GIFs are best for short loops without audio.",
+            ("webm", "gif"): "Ensure the video is short and has minimal movement for optimal GIF conversion.",
+            ("jpg", "pdf"): "Combines the image into a PDF file. Use for creating print-ready versions of photos.",
+            ("png", "jpg"): "Converts transparent PNGs into non-transparent JPEGs. Background will be white.",
+            ("docx", "pdf"): "Converts Word documents into portable PDF format. Formatting is preserved.",
+            ("txt", "pdf"): "Each line becomes a row in the PDF. Best for simple text without styling.",
+            ("mp3", "wav"): "WAV files are uncompressed. Expect larger file sizes but better quality.",
+            ("wav", "mp3"): "Compresses WAV to smaller MP3. Some quality may be lost.",
+            ("gif", "mp4"): "GIF will be converted into a playable video format (.mp4) with improved compression.",
+        }
+        key = (self.selected_from.get().lower(), self.selected_to.get().lower())
+        self.description_label.config(text=descriptions.get(key, ""))
+
     def paste_from_clipboard(self, event=None):
         try:
             clipboard_content = self.master.clipboard_get()
@@ -176,6 +200,10 @@ class MainWindow:
         to_ext = self.selected_to.get().lower()
         key = (from_ext, to_ext)
 
+        if not os.path.exists(self.selected_file):
+            self.status_label.config(text="Selected file does not exist.", fg="red")
+            return
+
         file_ext = os.path.splitext(self.selected_file)[1].lower().replace('.', '')
         if file_ext != from_ext:
             self.status_label.config(
@@ -196,36 +224,27 @@ class MainWindow:
             self.status_label.config(text="Save operation was cancelled.", fg="orange")
             return
 
-        try:
-            self.conversion_function = conversion_map[key]
-            self.dst_path = dst_path
+        self.conversion_function = conversion_map[key]
+        self.dst_path = dst_path
 
-            self.progress["value"] = 0
-            self.progress_label.config(text="0%")
-            self.status_label.config(text="", fg="green")
-            self.master.update_idletasks()
-
-            self.animate_progress(0, 100)
-
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            self.status_label.config(text=f"Error: {e}", fg="red")
-
-    def animate_progress(self, current, target, step=1, delay=15):
-        if current > target:
-            try:
-                self.conversion_function(self.selected_file, self.dst_path)
-                self.status_label.config(text="Conversion successful!", fg="green")
-            except Exception as e:
-                self.status_label.config(text="Error during conversion", fg="red")
-            return
-
-        self.progress["value"] = current
-        self.progress_label.config(text=f"{current}%")
+        self.progress["value"] = 0
+        self.progress_label.config(text="0%")
+        self.status_label.config(text="", fg="green")
         self.master.update_idletasks()
 
-        self.master.after(delay, lambda: self.animate_progress(current + step, target, step, delay))
+        threading.Thread(target=self.run_conversion_with_progress, daemon=True).start()
+
+    def run_conversion_with_progress(self):
+        try:
+            for i in range(101):
+                self.progress["value"] = i
+                self.progress_label.config(text=f"{i}%")
+                self.master.update_idletasks()
+                self.master.after(10)
+            self.conversion_function(self.selected_file, self.dst_path)
+            self.status_label.config(text="Download completed", fg="green")
+        except Exception as e:
+            self.status_label.config(text=f"Error during conversion: {e}", fg="red")
 
     def download_youtube_video(self):
         url = self.youtube_url.get().strip()
@@ -243,11 +262,26 @@ class MainWindow:
             return
 
         self.youtube_status_label.config(text="Downloading...", fg="blue")
-        self.youtube_progress["value"] = 0
-        self.youtube_progress_label.config(text="0%")
+        self.youtube_progress["value"] = 10
+        self.youtube_progress_label.config(text="10%")
         self.master.update_idletasks()
 
+        self.simulated_progress = 10
+        self.real_progress_started = False
+
+        def simulate_progress():
+            for _ in range(30):  # 30 секунди
+                if self.real_progress_started:
+                    return
+                self.simulated_progress += 1  # от 10% до 40%
+                self.youtube_progress["value"] = self.simulated_progress
+                self.youtube_progress_label.config(text=f"{self.simulated_progress}%")
+                self.master.update_idletasks()
+                time.sleep(1)
+
         def update_progress(percent):
+            self.real_progress_started = True
+            percent = max(percent, self.simulated_progress)
             self.youtube_progress["value"] = percent
             self.youtube_progress_label.config(text=f"{int(percent)}%")
             self.master.update_idletasks()
@@ -261,4 +295,7 @@ class MainWindow:
             except Exception as e:
                 self.youtube_status_label.config(text=f"Error: {e}", fg="red")
 
+        threading.Thread(target=simulate_progress, daemon=True).start()
         threading.Thread(target=run_download, daemon=True).start()
+
+

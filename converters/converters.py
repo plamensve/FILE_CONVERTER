@@ -11,50 +11,62 @@ from xhtml2pdf import pisa
 
 warnings.filterwarnings("ignore")
 
+
 # ------------------ IMAGES ------------------
 
 def convert_png_to_pdf(src, dst):
     img = Image.open(src).convert("RGB")
     img.save(dst, "PDF", resolution=100.0)
 
+
 def convert_jpg_to_pdf(src, dst):
     img = Image.open(src).convert("RGB")
     img.save(dst, "PDF", resolution=100.0)
+
 
 def convert_jpeg_to_pdf(src, dst):
     img = Image.open(src).convert("RGB")
     img.save(dst, "PDF", resolution=100.0)
 
+
 def convert_png_to_jpg(src, dst):
     img = Image.open(src).convert("RGB")
     img.save(dst, "JPEG")
+
 
 def convert_jpg_to_png(src, dst):
     img = Image.open(src)
     img.save(dst, "PNG")
 
+
 def convert_bmp_to_jpg(src, dst):
     img = Image.open(src).convert("RGB")
     img.save(dst, "JPEG")
+
 
 def convert_tiff_to_pdf(src, dst):
     img = Image.open(src).convert("RGB")
     img.save(dst, "PDF")
 
+
 def convert_webp_to_png(src, dst):
     img = Image.open(src)
     img.save(dst, "PNG")
+
 
 def convert_webp_to_jpg(src, dst):
     img = Image.open(src).convert("RGB")
     img.save(dst, "JPEG")
 
+
 def convert_jfif_to_png(src, dst):
     img = Image.open(src)
     img.save(dst, "PNG")
 
+
 def convert_jpg_to_pdf_alt(src, dst):
     convert_jpg_to_pdf(src, dst)
+
 
 # ------------------ AUDIO ------------------
 
@@ -62,13 +74,16 @@ def convert_mp3_to_wav(src, dst):
     sound = AudioSegment.from_mp3(src)
     sound.export(dst, format="wav")
 
+
 def convert_wav_to_mp3(src, dst):
     sound = AudioSegment.from_wav(src)
     sound.export(dst, format="mp3")
 
+
 def convert_mp3_to_ogg(src, dst):
     sound = AudioSegment.from_mp3(src)
     sound.export(dst, format="ogg")
+
 
 # ------------------ VIDEO ------------------
 
@@ -76,21 +91,26 @@ def convert_mp4_to_mp3(src, dst):
     clip = VideoFileClip(src)
     clip.audio.write_audiofile(dst)
 
+
 def convert_video_to_mp3(src, dst):
     clip = VideoFileClip(src)
     clip.audio.write_audiofile(dst)
+
 
 def convert_mp4_to_avi(src, dst):
     clip = VideoFileClip(src)
     clip.write_videofile(dst, codec="png")
 
+
 def convert_avi_to_mp4(src, dst):
     clip = VideoFileClip(src)
     clip.write_videofile(dst, codec="libx264")
 
+
 def convert_mov_to_mp4(src, dst):
     clip = VideoFileClip(src)
     clip.write_videofile(dst, codec="libx264")
+
 
 # ------------------ DOCUMENTS ------------------
 
@@ -100,6 +120,7 @@ def convert_docx_to_pdf(src, dst):
     converted_file = os.path.join(output_dir, os.path.splitext(os.path.basename(src))[0] + ".pdf")
     if os.path.exists(converted_file):
         os.rename(converted_file, dst)
+
 
 def convert_txt_to_pdf(src, dst):
     pdf = FPDF()
@@ -111,11 +132,13 @@ def convert_txt_to_pdf(src, dst):
             pdf.cell(200, 10, txt=line.strip(), ln=True)
     pdf.output(dst)
 
+
 def convert_html_to_pdf(src, dst):
     with open(src, "r", encoding="utf-8") as html_file:
         html = html_file.read()
     with open(dst, "wb") as result_file:
         pisa.CreatePDF(html, dest=result_file)
+
 
 # ------------------ GIF ------------------
 
@@ -123,21 +146,41 @@ def convert_video_to_gif(src, dst):
     clip = VideoFileClip(src)
     clip.write_gif(dst)
 
+
 def convert_mp4_to_gif(src, dst):
     clip = VideoFileClip(src)
     clip.write_gif(dst)
+
 
 def convert_webm_to_gif(src, dst):
     clip = VideoFileClip(src)
     clip.write_gif(dst)
 
+
 def convert_gif_to_mp4(src, dst):
     clip = VideoFileClip(src)
     clip.write_videofile(dst, codec="libx264")
 
-def convert_image_to_gif(src, dst):
+
+def convert_png_to_gif(src, dst):
     img = Image.open(src)
-    img.save(dst, save_all=True)
+    img.save(dst, format="GIF")
+
+
+def convert_jpg_to_gif(src, dst):
+    img = Image.open(src)
+    img.save(dst, format="GIF")
+
+
+def convert_bmp_to_gif(src, dst):
+    img = Image.open(src)
+    img.save(dst, format="GIF")
+
+
+def convert_webp_to_gif(src, dst):
+    img = Image.open(src)
+    img.save(dst, format="GIF")
+
 
 # ------------------ MAP ------------------
 
@@ -172,9 +215,13 @@ conversion_map = {
         ("mp4", "gif"): convert_mp4_to_gif,
         ("webm", "gif"): convert_webm_to_gif,
         ("gif", "mp4"): convert_gif_to_mp4,
-        ("image", "gif"): convert_image_to_gif,
+        ("png", "gif"): convert_png_to_gif,
+        ("jpg", "gif"): convert_jpg_to_gif,
+        ("bmp", "gif"): convert_bmp_to_gif,
+        ("webp", "gif"): convert_webp_to_gif,
     }.items()
 }
+
 
 # ------------------ YOUTUBE ------------------
 
