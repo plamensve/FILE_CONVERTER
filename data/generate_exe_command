@@ -1,7 +1,7 @@
 python -m PyInstaller `
 --noconfirm `
 --onefile `
---windowed `
+--console `
 --name FlexConverter `
 --icon=data/logo.ico `
 --add-data "ui;ui" `

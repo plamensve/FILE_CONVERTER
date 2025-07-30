@@ -115,17 +115,20 @@ def convert_mov_to_mp4(src, dst):
 # ------------------ DOCUMENTS ------------------
 
 def convert_docx_to_pdf(src, dst):
-    output_dir = os.path.dirname(dst)
-    docx_to_pdf_builtin(src, output_dir)
+    try:
+        output_dir = os.path.dirname(dst)
+        docx_to_pdf_builtin(src, output_dir)
 
-    converted_file = os.path.join(
-        output_dir,
-        os.path.splitext(os.path.basename(src))[0] + ".pdf"
-    )
+        converted_file = os.path.join(
+            output_dir,
+            os.path.splitext(os.path.basename(src))[0] + ".pdf"
+        )
 
-    if os.path.exists(converted_file):
-        if converted_file != dst:
-            os.rename(converted_file, dst)
+        if os.path.exists(converted_file):
+            if converted_file != dst:
+                os.rename(converted_file, dst)
+    except Exception as e:
+        print(f"[DOCX ➜ PDF] Error: {e}")
 
 
 def convert_txt_to_pdf(src, dst):
